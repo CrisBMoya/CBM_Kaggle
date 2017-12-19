@@ -2,9 +2,6 @@
 rm(list=ls())
 
 library(ggplot2)
-library(corrplot)
-library(caTools)
-
 
 setwd("C:/Users/Tobal/Google Drive/Otros/Machine Learning/Udemy/R/Linear Regression/Bike Sharing Demand")
 
@@ -23,7 +20,7 @@ ggplot(data=Month1, aes(x=datetime, y=count)) + geom_boxplot() +
 #Dissect
 BikeMonth=as.integer(format(as.Date(bikeData$datetime), format="%m"))
 BikeDay=as.integer(format(as.Date(bikeData$datetime), format="%d"))
-BikeHour=format(strptime(bikeData$datetime, format="%Y-%m-%d %H:%M:%S"), format="%H:%M:%S")
+BikeHour=(format(strptime(bikeData$datetime, format="%Y-%m-%d %H:%M:%S"), format="%H"))
 bikeData$Month=BikeMonth
 bikeData$Day=BikeDay
 bikeData$Hour=BikeHour
@@ -93,14 +90,13 @@ ggplot(data=BikeTEMP, aes(x=Hour, y=count))  + geom_point(data=BikeTEMP,aes(colo
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 #Linearity respond in working days between:
-#05:00:00-11:00:00, rising.
-#12:00:00-14:00:00, no change.
-#15:00:00-04:00:00, falling.
+#05:00:00-13:00:00, rising.
+#14:00:00-04:00:00, falling.
 #Season dosen't seems to be a relevant factor.
 
 #####################################
 #First time window: 05:00:00-11:00:00
-TimeWindow1=unique(bikeData$Hour)[6:12]
+TimeWindow1=unique(bikeData$Hour)[6:14]
 TimeWindow1
 
 BikeTrainW1=bikeData[bikeData$workingday==0,]
@@ -110,12 +106,13 @@ BikeTrainW1=BikeTrainW1[BikeTrainW1$Hour %in% TimeWindow1,]
 daysSet=16:19
 trainSetW1=BikeTrainW1[!BikeTrainW1$Day %in% daysSet,]
 testSetW1=BikeTrainW1[BikeTrainW1$Day %in% daysSet,]
+
 (nrow(BikeTrainW1)*80)/100
 nrow(trainSetW1)
 
 #Modeling
 colnames(trainSetW1)
-ModelW1=lm(count ~ season + weather + temp + Hour, data=trainSetW1)
+ModelW1=lm(count ~ weather + Hour +  temp + atemp + windspeed, data=trainSetW1)
 summary(ModelW1)
 
 #Predict
@@ -131,48 +128,12 @@ SSE= sum((EvalModel$Predicted - EvalModel$Actual)^2)
 SST= sum((mean(BikeTrainW1$count) - EvalModel$Actual)^2)
 R2=1- SSE/SST
 R2
-#Recorded Value: 0.7067475
-
-
-#####################################
-#Second time window: 12:00:00-14:00:00
-TimeWindow2=unique(bikeData$Hour)[13:15]
-TimeWindow2
-
-BikeTrainW2=bikeData[bikeData$workingday==0,]
-BikeTrainW2=BikeTrainW2[BikeTrainW2$Hour %in% TimeWindow2,]
-
-#Train and test sets. Aprox 80-20%
-daysSet=16:19
-trainSetW2=BikeTrainW2[!BikeTrainW2$Day %in% daysSet,]
-testSetW2=BikeTrainW2[BikeTrainW2$Day %in% daysSet,]
-(nrow(BikeTrainW2)*80)/100
-nrow(trainSetW2)
-
-#Modeling
-colnames(trainSetW2)
-ModelW2=lm(count ~ season + weather + temp + Hour, data=trainSetW2)
-summary(ModelW2)
-
-#Predict
-PredW2=predict(ModelW2, newdata=testSetW2)
-
-#Bind predicted values with original ones
-EvalModel=cbind(PredW2, testSetW2$count)
-colnames(EvalModel)=c("Predicted","Actual")
-EvalModel=as.data.frame(EvalModel)
-
-#Getting R2 of the predicted values
-SSE= sum((EvalModel$Predicted - EvalModel$Actual)^2)
-SST= sum((mean(BikeTrainW2$count) - EvalModel$Actual)^2)
-R2=1- SSE/SST
-R2
-#Recorded Value: 0.3580872
+#Recorded Value: 0.7124573
 
 
 #####################################
 #Third time window: 12:00:00-14:00:00
-TimeWindow3=c(unique(bikeData$Hour)[16:24],unique(bikeData$Hour)[1:5])
+TimeWindow3=c(unique(bikeData$Hour)[15:24],unique(bikeData$Hour)[1:5])
 TimeWindow3
 
 BikeTrainW3=bikeData[bikeData$workingday==0,]
@@ -187,7 +148,7 @@ nrow(trainSetW3)
 
 #Modeling
 colnames(trainSetW3)
-ModelW3=lm(count ~ season + weather + temp + Hour, data=trainSetW3)
+ModelW3=lm(count ~ weather + Hour  + atemp + windspeed, data=trainSetW3)
 summary(ModelW3)
 
 #Predict
@@ -203,4 +164,136 @@ SSE= sum((EvalModel$Predicted - EvalModel$Actual)^2)
 SST= sum((mean(BikeTrainW3$count) - EvalModel$Actual)^2)
 R2=1- SSE/SST
 R2
-#Recorded Value: 0.7295704
+#Recorded Value: 0.7334369
+
+#########
+###
+
+#More Eploxration of data
+
+#Data IS linear, for range 05:00:00 to 13:00:00
+ggplot(data=BikeTrainW1, aes(x=Hour, y=count)) + geom_point()
+
+TimeStampOrder=c("14:00:00","15:00:00","16:00:00","17:00:00","18:00:00","19:00:00","20:00:00",
+                 "21:00:00","22:00:00","23:00:00","00:00:00","01:00:00","02:00:00","03:00:00",
+                 "04:00:00")
+BikeTrainW3$NewHour=factor(BikeTrainW3$Hour, levels=TimeStampOrder)
+
+#Data IS linear, for range 14:00:00 to 04:00:00
+ggplot(data=BikeTrainW3, aes(x=NewHour, y=count)) + geom_point() + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+ggplot(data=BikeTrainW1, aes(x=Day, y=count)) + geom_point() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+colnames(BikeTrainW1)
+
+
+
+###########
+#    _____       _   _   _                        _ _   _______               _   _               
+#   |  __ \     | | | | (_)                 /\   | | | |__   __|             | | | |              
+#   | |__) |   _| |_| |_ _ _ __   __ _     /  \  | | |    | | ___   __ _  ___| |_| |__   ___ _ __ 
+#   |  ___/ | | | __| __| | '_ \ / _` |   / /\ \ | | |    | |/ _ \ / _` |/ _ \ __| '_ \ / _ \ '__|
+#   | |   | |_| | |_| |_| | | | | (_| |  / ____ \| | |    | | (_) | (_| |  __/ |_| | | |  __/ |   
+#   |_|    \__,_|\__|\__|_|_| |_|\__, | /_/    \_\_|_|    |_|\___/ \__, |\___|\__|_| |_|\___|_|   
+#                                 __/ |                             __/ |                         
+#                                |___/                             |___/                          
+rm(list=ls())
+library(ggplot2)
+
+setwd("C:/Users/Tobal/Google Drive/Otros/Machine Learning/Udemy/R/Linear Regression/Bike Sharing Demand")
+
+bikeData=read.csv("train.csv", header=TRUE)
+
+
+#Dissect
+BikeMonth=as.integer(format(as.Date(bikeData$datetime), format="%m"))
+BikeDay=as.integer(format(as.Date(bikeData$datetime), format="%d"))
+BikeHour=(format(strptime(bikeData$datetime, format="%Y-%m-%d %H:%M:%S"), format="%H"))
+bikeData$Month=BikeMonth
+bikeData$Day=BikeDay
+bikeData$Hour=BikeHour
+
+#####################################
+#First time window: 05:00:00-11:00:00
+TimeWindow1=unique(bikeData$Hour)[6:14]
+TimeWindow1
+
+BikeTrainW1=bikeData[bikeData$workingday==0,]
+BikeTrainW1=BikeTrainW1[BikeTrainW1$Hour %in% TimeWindow1,]
+
+#Train and test sets. Aprox 80-20%
+daysSet=16:19
+trainSetW1=BikeTrainW1[!BikeTrainW1$Day %in% daysSet,]
+testSetW1=BikeTrainW1[BikeTrainW1$Day %in% daysSet,]
+
+(nrow(BikeTrainW1)*80)/100
+nrow(trainSetW1)
+
+#Modeling
+colnames(trainSetW1)
+ModelW1=lm(count ~ weather + Hour +  temp + atemp + windspeed, data=trainSetW1)
+summary(ModelW1)
+
+#Predict
+PredW1=predict(ModelW1, newdata=testSetW1)
+
+#Bind predicted values with original ones
+EvalModel=cbind(PredW1, testSetW1$count)
+colnames(EvalModel)=c("Predicted","Actual")
+EvalModel=as.data.frame(EvalModel)
+
+#Getting R2 of the predicted values
+SSE= sum((EvalModel$Predicted - EvalModel$Actual)^2)
+SST= sum((mean(BikeTrainW1$count) - EvalModel$Actual)^2)
+R2=1- SSE/SST
+R2
+#Recorded Value: 0.7124573
+
+
+#####################################
+#Third time window: 12:00:00-14:00:00
+TimeWindow3=c(unique(bikeData$Hour)[15:24],unique(bikeData$Hour)[1:5])
+TimeWindow3
+
+BikeTrainW3=bikeData[bikeData$workingday==0,]
+BikeTrainW3=BikeTrainW3[BikeTrainW3$Hour %in% TimeWindow3,]
+
+#Train and test sets. Aprox 80-20%
+daysSet=16:19
+trainSetW3=BikeTrainW3[!BikeTrainW3$Day %in% daysSet,]
+testSetW3=BikeTrainW3[BikeTrainW3$Day %in% daysSet,]
+(nrow(BikeTrainW3)*80)/100
+nrow(trainSetW3)
+
+#Modeling
+colnames(trainSetW3)
+ModelW3=lm(count ~ weather + Hour  + atemp + windspeed, data=trainSetW3)
+summary(ModelW3)
+
+#Predict
+PredW3=predict(ModelW3, newdata=testSetW3)
+
+#Bind predicted values with original ones
+EvalModel=cbind(PredW3, testSetW3$count)
+colnames(EvalModel)=c("Predicted","Actual")
+EvalModel=as.data.frame(EvalModel)
+
+#Getting R2 of the predicted values
+SSE= sum((EvalModel$Predicted - EvalModel$Actual)^2)
+SST= sum((mean(BikeTrainW3$count) - EvalModel$Actual)^2)
+R2=1- SSE/SST
+R2
+#Recorded Value: 0.7334369
+
+
+
+###
+#After a lot of trying a lot I look at the solutions on Udemy course and note that the
+#teacher also realice that using linear models with this data is not the best option,
+#based on that, I decide to move on.
+#Using linear regression I wal able to predict values with about 70% accuracy, but only 
+#for data without working values=1. The shape of this data was clearly not lineal,
+#and with peaks on two ocasions (count vs hours plot). The models didn't perfom well on this
+#particular data (less than 40%).
