@@ -290,10 +290,11 @@ R2
 
 
 ###
-#After a lot of trying a lot I look at the solutions on Udemy course and note that the
+#After a lot of trying I look at the solutions on Udemy course and note that the
 #teacher also realice that using linear models with this data is not the best option,
 #based on that, I decide to move on.
-#Using linear regression I wal able to predict values with about 70% accuracy, but only 
+#Using linear regression I was able to predict values with about 70% accuracy, but only 
 #for data without working values=1. The shape of this data was clearly not lineal,
 #and with peaks on two ocasions (count vs hours plot). The models didn't perfom well on this
-#particular data (less than 40%).
+#particular data (less than 40% accuracy).
+#I'll be beack with more knoledge to tackle this problem.
