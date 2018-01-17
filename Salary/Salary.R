@@ -125,8 +125,8 @@ df[sapply(df, is.character)]=lapply(df[sapply(df, is.character)], as.factor)
 
 #Train and test sets
 sepdf=sample.split(df$income, SplitRatio = 0.7)
-trainSet=subset(df, sepdf=TRUE)
-testSet=subset(df, sepdf=FALSE)
+trainSet=subset(df, sepdf==TRUE)
+testSet=subset(df, sepdf==FALSE)
 
 
 #Model
@@ -140,4 +140,4 @@ pred1=predict(model1, newdata=testSet, type="response")
 cMat=table(testSet$income, pred1 >0.5)
 
 (cMat[1,1]+cMat[2,2])/sum(cMat)
-#Recorded value: 0.8217956
+#Recorded value: 0.8220601
