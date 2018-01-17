@@ -1,7 +1,13 @@
+rm(list=ls())
+
 library(ggplot2)
 library(Amelia)
 library(nnet)
 library(caTools)
+library(Boruta)
+
+#Seed - Good practices
+set.seed(101)
 
 #Reading data
 trainDF=read.table("C:/Users/Tobal/Google Drive/R/Kaggle/Titanic/train.csv", sep=",", header=TRUE,
@@ -72,18 +78,18 @@ missmap(trainDF, legend=FALSE)
 ######
 #Train and test sets
 sepdf=sample.split(trainDF$Survived, SplitRatio = 0.7)
-trainSetNew=subset(trainDF, sepdf=TRUE)
-testSetNew=subset(trainDF, sepdf=FALSE)
+trainSetNew=subset(trainDF, sepdf==TRUE)
+testSetNew=subset(trainDF, sepdf==FALSE)
 
 #Prediction
 str(trainSetNew)
-model3=glm(Survived ~ Age + Sex, data=trainSetNew, family=binomial(logit))
+model3=glm(Survived ~ Age + Sex + Fare + Pclass, data=trainSetNew, family=binomial(logit))
 pred3=predict(model3, type="response", newdata=testSetNew)
 
 #Comparison
 cMat=table(testSetNew$Survived, pred3 > 0.5)
 (cMat[1,1]+cMat[2,2])/sum(cMat)
-#Recorded Value: 0.7867565
+#Recorded Value: 0.8246269
 
 #Applying into real test df
 testDF=read.table("C:/Users/Tobal/Google Drive/R/Kaggle/Titanic/test.csv", sep=",", header=TRUE)
@@ -97,3 +103,5 @@ pred4=ifelse(pred4 > 0.5, 1, 0)
 Solution=data.frame(PassengerId=testDF$PassengerId, Survived=pred4)
 write.csv(x=Solution, file="C:/Users/Tobal/Google Drive/R/Kaggle/Titanic/Solution.csv", 
           row.names=FALSE, quote=FALSE)
+
+#############
